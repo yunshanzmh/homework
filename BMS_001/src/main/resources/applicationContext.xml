@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans.xsd
+http://www.springframework.org/schema/context
+http://www.springframework.org/schema/context/spring-context.xsd
+http://www.springframework.org/schema/aop
+http://www.springframework.org/schema/aop/spring-aop.xsd
+http://www.springframework.org/schema/tx
+http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--读取jdbc.properties-->
+    <context:property-placeholder location="classpath:db.properties"/>
+    <!--创建dataSource-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="url" value="${jdbc.url}" />
+        <property name="username" value="${jdbc.username}" />
+        <property name="password" value="${jdbc.password}" />
+        <property name="driverClassName" value="${jdbc.driver}" />
+        <property name="maxActive" value="10" />
+        <property name="minIdle" value="5" />
+   </bean>
+    <!--创建SqlSessionFactory对象-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!--关联连接池-->
+        <property name="dataSource" ref="dataSource"/>
+        <!-- 加载mybatis的全局配置文件 -->
+        <property name="configLocation" value="classpath:SqlMapconfig.xml" />
+    </bean>
+    
+    <!-- Mapper 接口的扫描 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.yunshan.dao" />
+    </bean>
+    
+    <!--开启Spring的IOC的注解扫描-->
+    <context:component-scan base-package="com.yunshan.service"/>
+   
+    <!--开启Spring事务-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!-- 控制数据源 -->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!--启动Spring事务1，开启基于注解事务 2，使用xml配置形式的事务（必要主要的都是使用配置式）-->
+    <!-- <tx:annotation-driven/> -->
+     <aop:config>
+       <!-- 配置切入点表达式 -->
+       <aop:pointcut expression="execution(* com.yunshan.service..*(..))" id="txPonit"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="txPonit"/>
+     </aop:config>
+     <!-- 配置事务增强，事务如何切入-->
+     <tx:advice id="txAdvice" transaction-manager="transactionManager">
+      <tx:attributes>
+      <!-- 所有方法都是事务 -->
+      <tx:method name="*"/>
+      <!-- 以get开始的所有方法 -->
+      <tx:method name="get*" read-only="true"/>
+      </tx:attributes>
+     </tx:advice>
+</beans>
